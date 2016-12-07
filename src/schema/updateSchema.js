@@ -29,10 +29,13 @@ export default async function updateSchema() {
   }
 }
 
+// Read a schema as GraphQLSchema JS (file) or JSON with data.__schema (URL or file)
 const getSchema = async inputArg => {
   if (urlRegex.test(inputArg)) {
     const body = JSON.stringify({query: introspectionQuery});
-    const res = await fetch(inputArg, {method: 'POST', body});
+    var headers = new Headers();
+    headers.append("Content-Type", "application/json");
+    const res = await fetch(inputArg, {method: 'POST', headers, body});
     const {status, statusText} = res;
     let resJSON;
     if (status >= 200 && status < 300) {
@@ -45,14 +48,10 @@ const getSchema = async inputArg => {
     if (resJSON.errors) {
       console.log(`The graphQL endpoint returned the following errors: ${JSON.stringify(resJSON.errors)}`);
     }
-    return resJSON.data;
+    return resJSON;
   }
   const relativeInputPath = path.join(process.cwd(), inputArg);
   let rootSchema;
-  try {
-    rootSchema = require(relativeInputPath).default;
-  } catch (e) {
-    console.log('Error requiring schema', e);
-  }
+  rootSchema = require(relativeInputPath);
   return rootSchema;
 };

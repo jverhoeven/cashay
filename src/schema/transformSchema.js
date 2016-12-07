@@ -1,13 +1,19 @@
 import introspectionQuery from './introspectionQuery';
 
 export default async function transformSchema(rootSchema, graphql) {
-  const initialResult = await graphql(rootSchema, introspectionQuery);
-
-  if (initialResult.errors) {
-    throw new Error(`unable to parse schema: ${initialResult.errors}`);
+  if (rootSchema && 'data' in rootSchema && '__schema' in rootSchema.data) {
+    // The rootSchema is already an introspected schema. Just mimimize.
+    return makeMinimalSchema(rootSchema.data.__schema);
+  } else if (rootSchema) {
+    const introspectedSchema = await graphql(rootSchema.default || rootSchema, introspectionQuery);
+    if (introspectedSchema.errors) {
+      throw new Error(`unable to parse schema: ${introspectedSchema.errors}`);
+    }
+    return makeMinimalSchema(introspectedSchema.data.__schema);
+  } else {
+    throw new Error('Provide a schema to transformSchema function');
   }
 
-  return makeMinimalSchema(initialResult.data.__schema);
 }
 
 const isObject = val => val && typeof val === 'object';
